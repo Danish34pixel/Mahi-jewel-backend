@@ -45,6 +45,10 @@ router.post("/signup", async (req, res) => {
   try {
     console.log("Received signup body:", req.body); // Debug log
     const { username, email, password, phone, address } = req.body;
+    // Add required fields validation
+    if (!username || !email || !password || !phone || !address) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
@@ -58,7 +62,9 @@ router.post("/signup", async (req, res) => {
       address,
     });
     await user.save();
-    console.log("Saved user:", user); // Debug log
+    // Ensure user._id is available and a string
+    const userId = user._id ? user._id.toString() : undefined;
+
     // Generate JWT token
     const token = jwt.sign(
       { id: user._id, email: user.email },
@@ -68,13 +74,22 @@ router.post("/signup", async (req, res) => {
       }
     );
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-    });
-    res.status(201).json({ message: "User registered successfully", token });
+    // Make sure to send both id and _id for compatibility
+    const responseData = {
+      message: "User registered successfully",
+      token,
+      user: {
+        id: userId, // Always send as string
+        _id: userId,
+        username: user.username,
+        email: user.email,
+      },
+    };
+
+    console.log("Response data:", responseData); // Debug log
+    res.status(201).json(responseData);
   } catch (err) {
+    console.error("Signup error:", err); // Debug log
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -91,6 +106,9 @@ router.post("/login", async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
+
+    console.log("Login user ID:", user._id.toString()); // Debug log
+
     // Generate JWT token
     const token = jwt.sign(
       { id: user._id, email: user.email },
@@ -99,13 +117,23 @@ router.post("/login", async (req, res) => {
         expiresIn: "365d", // 1 year
       }
     );
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-    });
-    res.status(200).json({ message: "Login successful", token });
+
+    // Make sure to send both id and _id for compatibility
+    const responseData = {
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id.toString(), // Always send as string
+        _id: user._id.toString(),
+        username: user.username,
+        email: user.email,
+      },
+    };
+
+    console.log("Login response data:", responseData); // Debug log
+    res.status(200).json(responseData);
   } catch (err) {
+    console.error("Login error:", err); // Debug log
     res.status(500).json({ message: "Server error" });
   }
 });
