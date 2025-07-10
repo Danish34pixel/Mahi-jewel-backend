@@ -26,7 +26,7 @@ const imagekit = new ImageKit({
 });
 
 // Add a new product with at least 5 images (uploaded to ImageKit)
-router.post("/", upload.array("images"), async (req, res) => {
+router.post("/add", upload.array("images"), async (req, res) => {
   try {
     if (!req.files || req.files.length < 5) {
       return res
