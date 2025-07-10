@@ -66,18 +66,14 @@ router.put("/cancel/:id", async (req, res) => {
 });
 
 // Get all orders (admin)
-router.get("/all", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const orders = await Order.find();
-    console.log(orders);
     res.json(orders);
-    // res.json(orders);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
-
-// // Get all orders for admin (alias for /all)
 // router.get("/orderadmin", async (req, res) => {
 //   try {
 //     const orders = await Order.find().sort({ createdAt: -1 });
@@ -91,17 +87,19 @@ router.get("/all", async (req, res) => {
 // Update order status (admin)
 router.put("/status/:id", async (req, res) => {
   try {
-    const { status } = req.body;
-    let order = await Order.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
+    const { status, arrivingInfo, arrivingDate } = req.body;
+    const updateFields = { status };
+    if (arrivingInfo !== undefined) updateFields.arrivingInfo = arrivingInfo;
+    if (arrivingDate !== undefined) updateFields.arrivingDate = arrivingDate;
+
+    let order = await Order.findByIdAndUpdate(req.params.id, updateFields, {
+      new: true,
+    });
     // If not found by _id, try by orderId
     if (!order) {
       order = await Order.findOneAndUpdate(
         { orderId: req.params.id },
-        { status },
+        updateFields,
         { new: true }
       );
     }

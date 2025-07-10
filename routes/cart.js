@@ -2,6 +2,18 @@ const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
 
+// Clear all cart items for a user
+router.delete("/clear", async (req, res) => {
+  const userId = req.query.userId;
+  if (!userId) return res.status(400).json({ message: "userId required" });
+  try {
+    await CartItem.deleteMany({ userId });
+    res.json({ message: "Cart cleared" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Simple cart schema (userId, productId, quantity, name, price, image)
 const cartSchema = new mongoose.Schema({
   userId: { type: String, required: true },
