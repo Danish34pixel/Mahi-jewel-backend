@@ -138,4 +138,17 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// Admin check route
+router.get("/is-admin", async (req, res) => {
+  // Accept email and phone as query params or from token in production
+  const { email, phone } = req.query;
+  if (
+    email === "Mahiijewels@gmail.com" &&
+    (phone === "7987175226" || phone === 7987175226)
+  ) {
+    return res.json({ isAdmin: true });
+  }
+  return res.json({ isAdmin: false });
+});
+
 module.exports = router;

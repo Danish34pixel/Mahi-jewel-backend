@@ -17,7 +17,10 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://mahi-jewel-frontend.vercel.app"],
+    origin: [
+      "http://localhost:5173",
+      "https://mahi-jewel-frontend-psdz3s900-danishs-projects-c6dc6e0d.vercel.app",
+    ],
     credentials: true,
   })
 );
