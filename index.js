@@ -20,6 +20,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://mahi-jewel-frontend-psdz3s900-danishs-projects-c6dc6e0d.vercel.app",
+      "https://mahi-jewel-frontend.vercel.app",
     ],
     credentials: true,
   })
