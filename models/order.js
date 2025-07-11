@@ -1,7 +1,12 @@
 const mongoose = require("mongoose");
 
 const OrderSchema = new mongoose.Schema({
-  userId: { type: String, required: true },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: "User",
+    autopopulate: true,
+  },
   products: [
     {
       name: String,
@@ -19,4 +24,5 @@ const OrderSchema = new mongoose.Schema({
   arrivingDate: { type: String },
 });
 
+OrderSchema.plugin(require("mongoose-autopopulate"));
 module.exports = mongoose.model("Order", OrderSchema);

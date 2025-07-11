@@ -6,17 +6,23 @@ const jwt = require("jsonwebtoken");
 
 router.post("/login", async (req, res) => {
   try {
+    console.log("/login route hit");
+    console.log("Request body:", req.body);
     const { email, password } = req.body;
     const user = await User.findOne({ email });
+    console.log("User found:", user);
     if (!user) {
+      console.log("No user found for email:", email);
       return res.status(400).json({ message: "Invalid credentials" });
     }
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log("Password match:", isMatch);
     if (!isMatch) {
+      console.log("Password does not match for user:", email);
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    console.log("Login user ID:", user._id.toString()); // Debug log
+    console.log("Login user ID:", user._id.toString());
 
     // Generate JWT token
     const token = jwt.sign(
@@ -36,35 +42,44 @@ router.post("/login", async (req, res) => {
         _id: user._id.toString(),
         username: user.username,
         email: user.email,
-        phone: user.phone, // ADD THIS
+        phone: user.phone,
+        address: user.address,
       },
     };
 
-    console.log("Login response data:", responseData); // Debug log
+    console.log("Login response data:", responseData);
     res.status(200).json(responseData);
   } catch (err) {
-    console.error("Login error:", err); // Debug log
+    console.error("Login error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
 // Get all users (admin/debug)
 router.get("/users", async (req, res) => {
   try {
+    console.log("/users route hit");
     const users = await User.find({}, "-password");
+    console.log("Users found:", users);
     res.json(users);
   } catch (err) {
+    console.error("Users fetch error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
 // Signup route
 router.post("/signup", async (req, res) => {
   try {
+    console.log("/signup route hit");
+    console.log("Request body:", req.body);
     const { username, email, password, phone, address } = req.body;
     const existingUser = await User.findOne({ email });
+    console.log("Existing user:", existingUser);
     if (existingUser) {
+      console.log("User already exists for email:", email);
       return res.status(400).json({ message: "User already exists" });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
+    console.log("Hashed password:", hashedPassword);
     const user = new User({
       username,
       email,
@@ -72,7 +87,9 @@ router.post("/signup", async (req, res) => {
       phone,
       address,
     });
+    console.log("New user object:", user);
     await user.save();
+    console.log("User saved successfully");
     res.status(201).json({ message: "Signup successful" });
   } catch (err) {
     console.error("Signup error:", err);
@@ -84,13 +101,17 @@ module.exports = router;
 
 // Admin check route
 router.get("/is-admin", async (req, res) => {
+  console.log("/is-admin route hit");
   // Accept email and phone as query params or from token in production
   const { email, phone } = req.query;
+  console.log("Admin check for email:", email, "phone:", phone);
   if (
     email === "divyanshduttaroy163@gmail.com" &&
     (phone === "8989809903" || phone === 8989809903)
   ) {
+    console.log("Admin verified for email:", email);
     return res.json({ isAdmin: true });
   }
+  console.log("Not admin for email:", email);
   return res.json({ isAdmin: false });
 });

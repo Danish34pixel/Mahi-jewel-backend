@@ -5,13 +5,17 @@ const Order = require("../models/order.js");
 // Place a new order
 router.post("/", async (req, res) => {
   try {
+    console.log("POST /api/orders", req.body);
     const { userId, products, total, address } = req.body;
     const orderId = "ORD" + Date.now();
+    console.log("Generated orderId:", orderId);
 
     // Accept products with or without image (for flexibility)
     const validProducts =
       Array.isArray(products) && products.every((p) => p && p.name && p.price);
+    console.log("Products valid:", validProducts);
     if (!validProducts) {
+      console.log("Invalid products:", products);
       return res.status(400).json({
         success: false,
         message: "Each product must have name and price fields.",
@@ -20,11 +24,13 @@ router.post("/", async (req, res) => {
 
     const order = new Order({ userId, products, total, orderId, address });
     await order.save();
+    console.log("Order saved:", order);
     res.status(201).json({
       success: true,
       order,
     });
   } catch (err) {
+    console.log("Order POST error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -32,12 +38,14 @@ router.post("/", async (req, res) => {
 // Get all orders for a user
 router.get("/:userId", async (req, res) => {
   try {
+    console.log("GET /api/orders/:userId", req.params.userId);
     const orders = await Order.find({ userId: req.params.userId }).sort({
       createdAt: -1,
     });
-    console.log(orders);
+    console.log("Orders found:", orders);
     res.json(orders);
   } catch (err) {
+    console.log("Order GET error:", err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -45,6 +53,7 @@ router.get("/:userId", async (req, res) => {
 // Cancel order route (by orderId as fallback if not found by _id)
 router.put("/cancel/:id", async (req, res) => {
   try {
+    console.log("PUT /api/orders/cancel/:id", req.params.id);
     let order = await Order.findByIdAndUpdate(
       req.params.id,
       { status: "Cancelled" },
@@ -58,9 +67,11 @@ router.put("/cancel/:id", async (req, res) => {
         { new: true }
       );
     }
+    console.log("Cancelled order:", order);
     if (!order) return res.status(404).json({ message: "Order not found" });
     res.json(order);
   } catch (err) {
+    console.log("Order cancel error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -68,9 +79,12 @@ router.put("/cancel/:id", async (req, res) => {
 // Get all orders (admin)
 router.get("/", async (req, res) => {
   try {
-    const orders = await Order.find();
+    console.log("GET /api/orders (admin)");
+    const orders = await Order.find().populate("userId", "name email address");
+    console.log("Orders found:", orders);
     res.json(orders);
   } catch (err) {
+    console.log("Order GET (admin) error:", err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -87,10 +101,12 @@ router.get("/", async (req, res) => {
 // Update order status (admin)
 router.put("/status/:id", async (req, res) => {
   try {
+    console.log("PUT /api/orders/status/:id", req.params.id);
     const { status, arrivingInfo, arrivingDate } = req.body;
     const updateFields = { status };
     if (arrivingInfo !== undefined) updateFields.arrivingInfo = arrivingInfo;
     if (arrivingDate !== undefined) updateFields.arrivingDate = arrivingDate;
+    console.log("Update fields:", updateFields);
 
     let order = await Order.findByIdAndUpdate(req.params.id, updateFields, {
       new: true,
@@ -103,9 +119,11 @@ router.put("/status/:id", async (req, res) => {
         { new: true }
       );
     }
+    console.log("Updated order:", order);
     if (!order) return res.status(404).json({ message: "Order not found" });
     res.json(order);
   } catch (err) {
+    console.log("Order status update error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -113,14 +131,17 @@ router.put("/status/:id", async (req, res) => {
 // Delete order route
 router.delete("/:id", async (req, res) => {
   try {
+    console.log("DELETE /api/orders/:id", req.params.id);
     let order = await Order.findByIdAndDelete(req.params.id);
     // If not found by _id, try by orderId
     if (!order) {
       order = await Order.findOneAndDelete({ orderId: req.params.id });
     }
+    console.log("Deleted order:", order);
     if (!order) return res.status(404).json({ message: "Order not found" });
     res.json({ success: true, message: "Order deleted" });
   } catch (err) {
+    console.log("Order delete error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
