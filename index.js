@@ -6,10 +6,6 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const authRoutes = require("./routes/auth.js");
-const productRoutes = require("./routes/product.js");
-const cartRoutes = require("./routes/cart.js");
-
-const orderRoutes = require("./routes/order.js");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,11 +13,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://mahi-jewel-frontend-psdz3s900-danishs-projects-c6dc6e0d.vercel.app",
-      "https://mahi-jewel-frontend.vercel.app",
-    ],
+    origin: ["http://localhost:5173"],
     credentials: true,
   })
 );
@@ -30,10 +22,6 @@ app.use("/uploads", express.static(require("path").join(__dirname, "uploads")));
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/cart", cartRoutes);
-
-app.use("/api/orders", orderRoutes);
 
 // MongoDB connection
 mongoose

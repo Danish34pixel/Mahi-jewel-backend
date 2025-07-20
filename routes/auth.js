@@ -3,6 +3,18 @@ const router = express.Router();
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const upload = require("../upload");
+const cloudinary = require("../cloudinary");
+
+// Get all users (admin/debug)
+router.get("/users", async (req, res) => {
+  try {
+    const users = await User.find({}, "-password");
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 router.post("/login", async (req, res) => {
   try {
@@ -44,6 +56,7 @@ router.post("/login", async (req, res) => {
         email: user.email,
         phone: user.phone,
         address: user.address,
+        age: user.age,
       },
     };
 
@@ -54,46 +67,59 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-// Get all users (admin/debug)
-router.get("/users", async (req, res) => {
-  try {
-    console.log("/users route hit");
-    const users = await User.find({}, "-password");
-    console.log("Users found:", users);
-    res.json(users);
-  } catch (err) {
-    console.error("Users fetch error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-// Signup route
-router.post("/signup", async (req, res) => {
+
+// Signup route with image upload
+router.post("/signup", upload.single("image"), async (req, res) => {
   try {
     console.log("/signup route hit");
-    console.log("Request body:", req.body);
-    const { username, email, password, phone, address } = req.body;
+    const {
+      name,
+      email,
+      password,
+      phone,
+      address,
+      age,
+      gender,
+      paymentStatus,
+    } = req.body;
     const existingUser = await User.findOne({ email });
-    console.log("Existing user:", existingUser);
     if (existingUser) {
-      console.log("User already exists for email:", email);
       return res.status(400).json({ message: "User already exists" });
     }
+    let imageUrl = "";
+    if (req.file) {
+      imageUrl = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { resource_type: "image" },
+          (error, result) => {
+            if (error) return reject(error);
+            if (!result || !result.secure_url)
+              return reject(new Error("Cloudinary upload failed"));
+            resolve(result.secure_url);
+          }
+        );
+        stream.end(req.file.buffer);
+      });
+    } else {
+      return res.status(400).json({ message: "Image is required" });
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
-    console.log("Hashed password:", hashedPassword);
     const user = new User({
-      username,
+      name,
       email,
       password: hashedPassword,
       phone,
       address,
+      age,
+      gender,
+      paymentStatus,
+      image: imageUrl,
     });
-    console.log("New user object:", user);
     await user.save();
-    console.log("User saved successfully");
     res.status(201).json({ message: "Signup successful" });
   } catch (err) {
     console.error("Signup error:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(400).json({ message: err.message });
   }
 });
 
