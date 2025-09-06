@@ -6,10 +6,6 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     address: { type: String, required: true },
     phone: { type: String, required: true },
-    age: { type: Number, required: true },
-    gender: { type: String, required: true },
-    image: { type: String, required: true },
-    paymentStatus: { type: String, default: "unpaid" },
     password: { type: String, required: true },
   },
   { timestamps: true }

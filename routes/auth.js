@@ -72,16 +72,11 @@ router.post("/login", async (req, res) => {
 router.post("/signup", upload.single("image"), async (req, res) => {
   try {
     console.log("/signup route hit");
-    const {
-      name,
-      email,
-      password,
-      phone,
-      address,
-      age,
-      gender,
-      paymentStatus,
-    } = req.body;
+    let { name, username, email, password, phone, address } = req.body;
+    // Support frontend sending username instead of name
+    if (!name && username) {
+      name = username;
+    }
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
@@ -100,21 +95,23 @@ router.post("/signup", upload.single("image"), async (req, res) => {
         );
         stream.end(req.file.buffer);
       });
-    } else {
-      return res.status(400).json({ message: "Image is required" });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({
+    // Only include fields that are present
+    const userData = {
       name,
       email,
       password: hashedPassword,
       phone,
       address,
-      age,
-      gender,
-      paymentStatus,
-      image: imageUrl,
-    });
+    };
+    if (typeof req.body.age !== "undefined") userData.age = req.body.age;
+    if (typeof req.body.gender !== "undefined")
+      userData.gender = req.body.gender;
+    if (typeof req.body.paymentStatus !== "undefined")
+      userData.paymentStatus = req.body.paymentStatus;
+    if (typeof imageUrl !== "undefined") userData.image = imageUrl;
+    const user = new User(userData);
     await user.save();
     res.status(201).json({ message: "Signup successful" });
   } catch (err) {

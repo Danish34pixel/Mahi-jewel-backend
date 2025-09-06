@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const authRoutes = require("./routes/auth.js");
+const productRoutes = require("./routes/product.js");
 const cartRoutes = require("./routes/cart.js");
 
 const orderRoutes = require("./routes/order.js");
@@ -25,6 +26,7 @@ app.use("/uploads", express.static(require("path").join(__dirname, "uploads")));
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 
 app.use("/api/orders", orderRoutes);
@@ -33,7 +35,7 @@ app.use("/api/orders", orderRoutes);
 mongoose
   .connect(process.env.MONGODB_URI, {})
   .then(() => {
-    console.log("Connected to MongoDB");
+    console.log("Connected to MongoDB URI:", process.env.MONGODB_URI);
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
   .catch((err) => console.error("MongoDB connection error:", err));
