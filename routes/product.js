@@ -79,23 +79,32 @@ router.post("/", upload.array("images", 5), async (req, res) => {
     for (const file of req.files) {
       try {
         if (hasCloudinary) {
-          // Upload to Cloudinary from disk path and then delete local file.
-          const uploadResult = await cloudinary.uploader.upload(file.path, {
-            resource_type: "image",
+          // Upload from buffer using upload_stream
+          const uploadResult = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+              { resource_type: "image" },
+              (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+              }
+            );
+            stream.end(file.buffer);
           });
+
           if (uploadResult && uploadResult.secure_url) {
             images.push(uploadResult.secure_url);
           } else {
-            // fallback to local URL if Cloudinary didn't return url
-            const relPath = path.relative(path.join(__dirname, ".."), file.path);
-            images.push(`${protocol}://${req.headers.host}/${relPath.replace(/\\\\/g, "/")}`);
+            throw new Error("Cloudinary returned no secure_url");
           }
-
-          // remove local file (ignore errors)
-          fs.unlink(file.path, (err) => err && console.warn("Failed to unlink", file.path, err));
         } else {
-          const relPath = path.relative(path.join(__dirname, ".."), file.path);
-          images.push(`${protocol}://${req.headers.host}/${relPath.replace(/\\\\/g, "/")}`);
+          // Fallback: write buffer to uploads/ and construct local URL
+          const uploadsDir = path.join(__dirname, "..", "uploads");
+          if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+          const filename = `${Date.now()}-${file.originalname.replace(/\s+/g, "-")}`;
+          const outPath = path.join(uploadsDir, filename);
+          fs.writeFileSync(outPath, file.buffer);
+          const relPath = path.relative(path.join(__dirname, ".."), outPath);
+          images.push(`${protocol}://${req.headers.host}/${relPath.replace(/\\/g, "/")}`);
         }
       } catch (fileErr) {
         console.error("Image processing/upload failed for", file.originalname, fileErr);
@@ -112,6 +121,8 @@ router.post("/", upload.array("images", 5), async (req, res) => {
     });
 
     await product.save();
+    // Log saved product id so deploy logs show that the product persisted to MongoDB
+    console.log("Product saved to DB with id:", product._id);
     return res.status(201).json(product);
   } catch (err) {
     console.error("Create product error:", err);

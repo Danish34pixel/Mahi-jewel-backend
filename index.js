@@ -51,7 +51,10 @@ app.use((err, req, res, next) => {
 mongoose
   .connect(process.env.MONGODB_URI, {})
   .then(() => {
-    console.log("Connected to MongoDB URI:", process.env.MONGODB_URI);
+  const mongo = process.env.MONGODB_URI || "(not set)";
+  const masked = mongo.replace(/(mongodb\+srv:\/\/)(.*):(.*)@(.*)/, "$1<user>:<pass>@$4");
+  console.log("Connected to MongoDB URI:", masked);
+  console.log("Cloudinary configured:", !!(process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET && process.env.CLOUDINARY_CLOUD_NAME));
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
   .catch((err) => console.error("MongoDB connection error:", err));
