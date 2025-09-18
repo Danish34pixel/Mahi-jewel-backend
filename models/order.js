@@ -47,4 +47,4 @@ const orderSchema = new mongoose.Schema(
 // Create sparse unique index on orderId to avoid collision with nulls
 orderSchema.index({ orderId: 1 }, { unique: true, sparse: true });
 
-module.exports = mongoose.model("Order", orderSchema);
+module.exports = mongoose.models.Order || mongoose.model("Order", orderSchema);
