@@ -16,6 +16,31 @@ router.get("/users", async (req, res) => {
   }
 });
 
+// Get single user by id (admin)
+router.get("/user/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Try ObjectId lookup first
+    let user = null;
+    const isObjectId = id && id.match(/^[0-9a-fA-F]{24}$/);
+    if (isObjectId) {
+      user = await User.findById(id, "_id name username email phone address");
+    }
+    // If not found, try lookup by username (some orders stored username as userId)
+    if (!user) {
+      user = await User.findOne(
+        { $or: [{ _id: id }, { username: id }] },
+        "_id name username email phone address"
+      );
+    }
+    if (!user) return res.status(404).json({ error: "User not found" });
+    return res.json(user);
+  } catch (err) {
+    console.error("Fetch user error:", err);
+    return res.status(500).json({ error: "Failed to fetch user" });
+  }
+});
+
 router.post("/login", async (req, res) => {
   try {
     console.log("/login route hit");
@@ -68,8 +93,19 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Signup route with image upload
-router.post("/signup", upload.single("image"), async (req, res) => {
+// Conditional upload middleware: only run multer when the request is multipart/form-data.
+// This allows the frontend to POST JSON (application/json) without an image and avoids
+// multer returning a 400 for non-multipart requests.
+function conditionalUpload(req, res, next) {
+  const type = req.headers && req.headers["content-type"];
+  if (type && type.indexOf("multipart/form-data") === 0) {
+    return upload.single("image")(req, res, next);
+  }
+  return next();
+}
+
+// Signup route with optional image upload
+router.post("/signup", conditionalUpload, async (req, res) => {
   try {
     console.log("/signup route hit");
     let { name, username, email, password, phone, address } = req.body;
@@ -100,6 +136,9 @@ router.post("/signup", upload.single("image"), async (req, res) => {
     // Only include fields that are present
     const userData = {
       name,
+      // Ensure username field is set (frontend sends `username`),
+      // fall back to name if username is not provided.
+      username: username || name,
       email,
       password: hashedPassword,
       phone,
@@ -113,7 +152,28 @@ router.post("/signup", upload.single("image"), async (req, res) => {
     if (typeof imageUrl !== "undefined") userData.image = imageUrl;
     const user = new User(userData);
     await user.save();
-    res.status(201).json({ message: "Signup successful" });
+
+    // Generate JWT token on signup to allow auto-login from frontend
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "365d" }
+    );
+
+    const responseData = {
+      message: "Signup successful",
+      token,
+      user: {
+        id: user._id.toString(),
+        _id: user._id.toString(),
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
+      },
+    };
+
+    res.status(201).json(responseData);
   } catch (err) {
     console.error("Signup error:", err);
     res.status(400).json({ message: err.message });

@@ -8,6 +8,7 @@ const authRoutes = require("./routes/auth");
 const productRoutes = require("./routes/product");
 const cartRoutes = require("./routes/cart");
 const orderRoutes = require("./routes/order");
+const placeholderRoutes = require("./routes/placeholder");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +27,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/placeholder", placeholderRoutes);
 
 // Global error handler (captures Multer errors and others) and returns JSON so
 // frontend receives the real failure reason instead of a generic 400.
@@ -51,10 +53,20 @@ app.use((err, req, res, next) => {
 mongoose
   .connect(process.env.MONGODB_URI, {})
   .then(() => {
-  const mongo = process.env.MONGODB_URI || "(not set)";
-  const masked = mongo.replace(/(mongodb\+srv:\/\/)(.*):(.*)@(.*)/, "$1<user>:<pass>@$4");
-  console.log("Connected to MongoDB URI:", masked);
-  console.log("Cloudinary configured:", !!(process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET && process.env.CLOUDINARY_CLOUD_NAME));
+    const mongo = process.env.MONGODB_URI || "(not set)";
+    const masked = mongo.replace(
+      /(mongodb\+srv:\/\/)(.*):(.*)@(.*)/,
+      "$1<user>:<pass>@$4"
+    );
+    console.log("Connected to MongoDB URI:", masked);
+    console.log(
+      "Cloudinary configured:",
+      !!(
+        process.env.CLOUDINARY_API_KEY &&
+        process.env.CLOUDINARY_API_SECRET &&
+        process.env.CLOUDINARY_CLOUD_NAME
+      )
+    );
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
   .catch((err) => console.error("MongoDB connection error:", err));

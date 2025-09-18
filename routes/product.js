@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const upload = require("../upload"); // memoryStorage multer
 const Product = require("../models/Product");
+const mongoose = require("mongoose");
 const path = require("path");
 const fs = require("fs");
 const cloudinary = require("../cloudinary");
@@ -99,16 +100,32 @@ router.post("/", upload.array("images", 5), async (req, res) => {
         } else {
           // Fallback: write buffer to uploads/ and construct local URL
           const uploadsDir = path.join(__dirname, "..", "uploads");
-          if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-          const filename = `${Date.now()}-${file.originalname.replace(/\s+/g, "-")}`;
+          if (!fs.existsSync(uploadsDir))
+            fs.mkdirSync(uploadsDir, { recursive: true });
+          const filename = `${Date.now()}-${file.originalname.replace(
+            /\s+/g,
+            "-"
+          )}`;
           const outPath = path.join(uploadsDir, filename);
           fs.writeFileSync(outPath, file.buffer);
           const relPath = path.relative(path.join(__dirname, ".."), outPath);
-          images.push(`${protocol}://${req.headers.host}/${relPath.replace(/\\/g, "/")}`);
+          images.push(
+            `${protocol}://${req.headers.host}/${relPath.replace(/\\/g, "/")}`
+          );
         }
       } catch (fileErr) {
-        console.error("Image processing/upload failed for", file.originalname, fileErr);
-        return res.status(400).json({ error: "Failed to upload/process image", file: file.originalname, details: fileErr && fileErr.message });
+        console.error(
+          "Image processing/upload failed for",
+          file.originalname,
+          fileErr
+        );
+        return res
+          .status(400)
+          .json({
+            error: "Failed to upload/process image",
+            file: file.originalname,
+            details: fileErr && fileErr.message,
+          });
       }
     }
 
@@ -118,6 +135,14 @@ router.post("/", upload.array("images", 5), async (req, res) => {
       description: description || "",
       category: category || "",
       images,
+    });
+
+    // Log which DB/host we're connected to before saving so deploy logs show
+    // where the product will be persisted (no credentials are printed).
+    console.log("Saving product to DB:", {
+      dbName: mongoose.connection.name,
+      host: mongoose.connection.host,
+      cloudinary: hasCloudinary,
     });
 
     await product.save();
