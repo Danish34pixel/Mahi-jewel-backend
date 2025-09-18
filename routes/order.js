@@ -4,7 +4,7 @@ const router = express.Router();
 const mongoose = require("mongoose");
 
 const Order = require("../models/order");
-const User = require("../models/user");
+const User = require("../models/User");
 
 /**
  * POST /api/orders

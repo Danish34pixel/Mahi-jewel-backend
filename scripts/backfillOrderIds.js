@@ -3,7 +3,7 @@
 
 const mongoose = require("mongoose");
 require("dotenv").config();
-const Order = require("../models/Order");
+const Order = require("../models/order");
 
 function generateOrderId() {
   return `ORD${Date.now()}-${Math.random()
